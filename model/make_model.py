@@ -343,6 +343,7 @@ class build_transformer_local(nn.Module):
         # HIT - output from the base model TransReID
         features = self.base(x, cam_label=cam_label, view_label=view_label)
 
+        print("========= make model forward =================")
         # HIT - get global features
         # global branch
         b1_feat = self.b1(features) # [64, 129, 768]
@@ -388,16 +389,28 @@ class build_transformer_local(nn.Module):
         local_feat_3_bn = self.bottleneck_3(local_feat_3)
         local_feat_4_bn = self.bottleneck_4(local_feat_4)
 
+        print("self.ID_LOSS_TYPE ", self.ID_LOSS_TYPE)
+        print("self.num_classes ", self.num_classes)
         if self.training:
             if self.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
                 cls_score = self.classifier(feat, label)
             else:
                 cls_score = self.classifier(feat)
+                print("cls_score ", cls_score.size())
+                print("global_feat ", global_feat.size())
                 # HIT - Classification scores for the local features
                 cls_score_1 = self.classifier_1(local_feat_1_bn)
+                print("local_feat_1_bn ", local_feat_1_bn.size())
+                print("cls_score_1 ", cls_score_1.size())
                 cls_score_2 = self.classifier_2(local_feat_2_bn)
+                print("local_feat_2_bn ", local_feat_2_bn.size())
+                print("cls_score_2 ", cls_score_2.size())
                 cls_score_3 = self.classifier_3(local_feat_3_bn)
+                print("local_feat_3_bn ", local_feat_3_bn.size())
+                print("cls_score_3 ", cls_score_3.size())
                 cls_score_4 = self.classifier_4(local_feat_4_bn)
+                print("local_feat_4_bn ", local_feat_4_bn.size())
+                print("cls_score_4 ", cls_score_4.size())
             return [cls_score, cls_score_1, cls_score_2, cls_score_3,
                         cls_score_4
                         ], [global_feat, local_feat_1, local_feat_2, local_feat_3,

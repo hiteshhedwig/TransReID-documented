@@ -10,6 +10,11 @@ from .triplet_loss import TripletLoss
 from .center_loss import CenterLoss
 
 
+# The cross-entropy loss (ID loss) [56]
+# and triplet loss [22] are most widely used in the deep ReID.
+# Luo et al. [27] proposed the BNNeck to better combine
+# ID loss and triplet loss. Sun et al. [36] proposed a unified
+# perspective for ID loss and triplet loss
 def make_loss(cfg, num_classes):    # modified by gu
     print("Configuring loss function...")
     sampler = cfg.DATALOADER.SAMPLER
@@ -42,6 +47,10 @@ def make_loss(cfg, num_classes):    # modified by gu
         print("Sampler is softmax_triplet. Using combined softmax and triplet loss.")
         def loss_func(score, feat, target, target_cam):
             print("Calculating loss...")
+            print("score", len(score)) # have shape of (torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]),torch.Size([16, 751]))
+            print("feat", len(feat)) # have a shape of (torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768],torch.Size([16, 768])
+            print("target ", len(target))
+            # print(target)
             if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
                 if cfg.MODEL.IF_LABELSMOOTH == 'on':
                     if isinstance(score, list):

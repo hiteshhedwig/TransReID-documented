@@ -70,11 +70,26 @@ def hard_example_mining(dist_mat, labels, return_inds=False):
     N = dist_mat.size(0)
 
     # shape [N, N]
+    # below is the way to find hard positive samples
+    # the "hardest" positive sample is matching 548 sample with 548
+    # >>> a = torch.tensor([548, 237, 381, 139])
+    # >>> a.expand(4,4)
+    # tensor([[548, 237, 381, 139],
+    #         [548, 237, 381, 139],
+    #         [548, 237, 381, 139],
+    #         [548, 237, 381, 139]])
+    # >>> a.expand(4,4).eq(a.expand(4,4).t())
+    # tensor([[ True, False, False, False],
+    #         [False,  True, False, False],
+    #         [False, False,  True, False],
+    #         [False, False, False,  True]])
+    # 
     is_pos = labels.expand(N, N).eq(labels.expand(N, N).t())
     is_neg = labels.expand(N, N).ne(labels.expand(N, N).t())
 
     # `dist_ap` means distance(anchor, positive)
     # both `dist_ap` and `relative_p_inds` with shape [N, 1]
+    # identifying the hardest positive samples for each anchor
     dist_ap, relative_p_inds = torch.max(
         dist_mat[is_pos].contiguous().view(N, -1), 1, keepdim=True)
     # print(dist_mat[is_pos].shape)
@@ -83,6 +98,8 @@ def hard_example_mining(dist_mat, labels, return_inds=False):
     dist_an, relative_n_inds = torch.min(
         dist_mat[is_neg].contiguous().view(N, -1), 1, keepdim=True)
     # shape [N]
+
+
     dist_ap = dist_ap.squeeze(1)
     dist_an = dist_an.squeeze(1)
 
@@ -110,28 +127,60 @@ class TripletLoss(object):
     modified based on original triplet loss using hard example mining
     """
 
+  # Hard Margin Loss:
+
+  #     Use when strict separation between classes is essential, and the margin must be enforced clearly.
+  #     Suitable for applications where strong class boundaries are required and slight violations are unacceptable.
+
+  # Soft Margin Loss:
+
+  #     Use when smooth gradients and stability are more critical, especially in complex models and deep neural networks.
+  #     Suitable for scenarios where the data is noisy, and softer enforcement of margins can lead to better generalization.
     def __init__(self, margin=None, hard_factor=0.0):
         self.margin = margin
         self.hard_factor = hard_factor
         if margin is not None:
+            # The margin ranking loss encourages the distance between the anchor and the negative sample to be larger than the distance between the anchor and the positive sample by at least a margin.
             self.ranking_loss = nn.MarginRankingLoss(margin=margin)
+            # Uses a hard margin
+            # Ensures the negative distance is greater than the positive distance by at least the margin
         else:
+            # The soft margin loss is a smooth approximation that penalizes the model if the positive distance is not less than the negative distance.
             self.ranking_loss = nn.SoftMarginLoss()
+            # Encourages the negative distance to be greater than the positive distance using a smooth approximation.
+            # No hard margin is used.
 
     def __call__(self, global_feat, labels, normalize_feature=False):
         if normalize_feature:
             global_feat = normalize(global_feat, axis=-1)
+        
+        # torch.Size([16, 768])
+        print("global_feat ", global_feat.size())
+        # torch.Size([16, 16])
+        print("labels ", labels)
         dist_mat = euclidean_dist(global_feat, global_feat)
+        print("dist_mat ", dist_mat.size())
         dist_ap, dist_an = hard_example_mining(dist_mat, labels)
+        # torch.Size([16])
+        print("dist_ap ", dist_ap.size())
+        # torch.Size([16])
+        print("dist_an ", dist_an.size())
 
         dist_ap *= (1.0 + self.hard_factor)
         dist_an *= (1.0 - self.hard_factor)
 
+        # creates a new tensor y that is the same size as dist_an and fills it with ones
+        # The tensor y is used as a target for the ranking_loss function, 
+        # indicating that we want the positive distances to be smaller than the 
+        # negative distances
         y = dist_an.new().resize_as_(dist_an).fill_(1)
+        print("y ", y.size())
+
         if self.margin is not None:
             loss = self.ranking_loss(dist_an, dist_ap, y)
         else:
             loss = self.ranking_loss(dist_an - dist_ap, y)
+        print("loss ", loss)
         return loss, dist_ap, dist_an
 
 

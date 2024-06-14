@@ -81,8 +81,6 @@ if __name__ == '__main__':
 
     # HIT - simple to understand
     loss_func, center_criterion = make_loss(cfg, num_classes=num_classes)
-    exit(0)
-
 
     # HIT - simple to understand
     optimizer, optimizer_center = make_optimizer(cfg, model, center_criterion)
@@ -101,3 +99,4 @@ if __name__ == '__main__':
         loss_func,
         num_query, args.local_rank
     )
+    

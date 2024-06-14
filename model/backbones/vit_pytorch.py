@@ -383,14 +383,21 @@ class TransReID(nn.Module):
         self.fc = nn.Linear(self.embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
     def forward_features(self, x, camera_id, view_id):
+        print("========= TRANS REID ===========")
         # HIT - convert image into a sequence of patch embeddings
         B = x.shape[0]
+        print("image input size ", x.size())
         x = self.patch_embed(x)
+        print("after patch embedding ", x.size())
 
         # HIT - expanded to match the batch size
         cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
+        print("cls_tokens ", cls_tokens.size())
+                
         # HIT - [cls_token, patch_1, patch_2, ..., patch_n]
         x = torch.cat((cls_tokens, x), dim=1)
+        print("cls_tokens + x", x.size())
+
 
         # HIT - To incorporate additional context (camera and view) into the embeddings
         if self.cam_num > 0 and self.view_num > 0:
@@ -402,27 +409,42 @@ class TransReID(nn.Module):
         else:
             x = x + self.pos_embed
 
+        print("camera context and position embedding", x.size())
+
         # HIT - dropout
         x = self.pos_drop(x)
+        
+        print("droput", x.size())
+
 
         if self.local_feature:
             # HIT - For tasks requiring local feature context, 
             # except last block, all the blocks are considered
+            print("local_feature " )
             for blk in self.blocks[:-1]:
+                print("input in blocks", x.size())
                 x = blk(x)
+                print("output in blocks", x.size())
+
 
             # HIT - raw, unnormalized features might be more useful in scenarios where local detail is crucial
             # Applying normalization here might alter the detailed local features that are desired for specific tasks
             # thats why no normalization is applied unlike for global context
+            print("return with ", x.size())
             return x
 
         else:
             # HIT - For tasks requiring global context, 
             # the entire sequence of blocks is processed to leverage the final
+            print("all features ")
             for blk in self.blocks:
+                print("input in blocks", x.size())
                 x = blk(x)
+                print("output in blocks", x.size())
 
             x = self.norm(x)
+
+            print("return with ", x[:, 0].size())
 
             return x[:, 0]
 
