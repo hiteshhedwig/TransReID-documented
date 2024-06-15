@@ -389,28 +389,31 @@ class build_transformer_local(nn.Module):
         local_feat_3_bn = self.bottleneck_3(local_feat_3)
         local_feat_4_bn = self.bottleneck_4(local_feat_4)
 
-        print("self.ID_LOSS_TYPE ", self.ID_LOSS_TYPE)
-        print("self.num_classes ", self.num_classes)
+        # print("self.ID_LOSS_TYPE ", self.ID_LOSS_TYPE)
+        # print("self.num_classes ", self.num_classes)
         if self.training:
             if self.ID_LOSS_TYPE in ('arcface', 'cosface', 'amsoftmax', 'circle'):
                 cls_score = self.classifier(feat, label)
             else:
+                # cls_score - torch.Size([16, 751]
                 cls_score = self.classifier(feat)
-                print("cls_score ", cls_score.size())
-                print("global_feat ", global_feat.size())
+                # print("cls_score ", cls_score.size())
+                # print("global_feat ", global_feat.size())
                 # HIT - Classification scores for the local features
+                # global_feat - torch.Size([16, 768]
+                # cls_score_1,2,3,4 - torch.Size([16, 751])
                 cls_score_1 = self.classifier_1(local_feat_1_bn)
-                print("local_feat_1_bn ", local_feat_1_bn.size())
-                print("cls_score_1 ", cls_score_1.size())
+                # print("local_feat_1_bn ", local_feat_1_bn.size())
+                # print("cls_score_1 ", cls_score_1.size())
                 cls_score_2 = self.classifier_2(local_feat_2_bn)
-                print("local_feat_2_bn ", local_feat_2_bn.size())
-                print("cls_score_2 ", cls_score_2.size())
+                # print("local_feat_2_bn ", local_feat_2_bn.size())
+                # print("cls_score_2 ", cls_score_2.size())
                 cls_score_3 = self.classifier_3(local_feat_3_bn)
-                print("local_feat_3_bn ", local_feat_3_bn.size())
-                print("cls_score_3 ", cls_score_3.size())
+                # print("local_feat_3_bn ", local_feat_3_bn.size())
+                # print("cls_score_3 ", cls_score_3.size())
                 cls_score_4 = self.classifier_4(local_feat_4_bn)
-                print("local_feat_4_bn ", local_feat_4_bn.size())
-                print("cls_score_4 ", cls_score_4.size())
+                # print("local_feat_4_bn ", local_feat_4_bn.size())
+                # print("cls_score_4 ", cls_score_4.size())
             return [cls_score, cls_score_1, cls_score_2, cls_score_3,
                         cls_score_4
                         ], [global_feat, local_feat_1, local_feat_2, local_feat_3,

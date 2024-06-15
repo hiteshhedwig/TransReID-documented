@@ -385,18 +385,22 @@ class TransReID(nn.Module):
     def forward_features(self, x, camera_id, view_id):
         print("========= TRANS REID ===========")
         # HIT - convert image into a sequence of patch embeddings
+        # x image - torch.Size([16, 3, 256, 128])
         B = x.shape[0]
-        print("image input size ", x.size())
+        # print("image input size ", x.size())
+        # patched embed - torch.Size([16, 128, 768]
         x = self.patch_embed(x)
-        print("after patch embedding ", x.size())
+        # print("after patch embedding ", x.size())
 
         # HIT - expanded to match the batch size
+        # torch.Size([16, 1, 768])
         cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
-        print("cls_tokens ", cls_tokens.size())
+        # print("cls_tokens ", cls_tokens.size())
                 
         # HIT - [cls_token, patch_1, patch_2, ..., patch_n]
+        # torch.Size([16, 129, 768])
         x = torch.cat((cls_tokens, x), dim=1)
-        print("cls_tokens + x", x.size())
+        # print("cls_tokens + x", x.size())
 
 
         # HIT - To incorporate additional context (camera and view) into the embeddings
@@ -409,28 +413,23 @@ class TransReID(nn.Module):
         else:
             x = x + self.pos_embed
 
-        print("camera context and position embedding", x.size())
-
         # HIT - dropout
         x = self.pos_drop(x)
         
-        print("droput", x.size())
-
 
         if self.local_feature:
             # HIT - For tasks requiring local feature context, 
             # except last block, all the blocks are considered
-            print("local_feature " )
             for blk in self.blocks[:-1]:
-                print("input in blocks", x.size())
+                # torch.Size([16, 129, 768])
                 x = blk(x)
-                print("output in blocks", x.size())
+                # torch.Size([16, 129, 768])
 
 
             # HIT - raw, unnormalized features might be more useful in scenarios where local detail is crucial
             # Applying normalization here might alter the detailed local features that are desired for specific tasks
             # thats why no normalization is applied unlike for global context
-            print("return with ", x.size())
+            # torch.Size([16, 129, 768])
             return x
 
         else:

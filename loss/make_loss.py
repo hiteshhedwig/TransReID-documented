@@ -47,9 +47,9 @@ def make_loss(cfg, num_classes):    # modified by gu
         print("Sampler is softmax_triplet. Using combined softmax and triplet loss.")
         def loss_func(score, feat, target, target_cam):
             print("Calculating loss...")
-            print("score", len(score)) # have shape of (torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]),torch.Size([16, 751]))
-            print("feat", len(feat)) # have a shape of (torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768],torch.Size([16, 768])
-            print("target ", len(target))
+            #print("score", len(score)) # have shape of (torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]),torch.Size([16, 751]))
+            #print("feat", len(feat)) # have a shape of (torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768],torch.Size([16, 768])
+            #print("target ", len(target))
             # print(target)
             if cfg.MODEL.METRIC_LOSS_TYPE == 'triplet':
                 if cfg.MODEL.IF_LABELSMOOTH == 'on':
@@ -76,15 +76,21 @@ def make_loss(cfg, num_classes):    # modified by gu
                     return loss
                 else:
                     if isinstance(score, list):
+                        # [cls_score, cls_score_1, cls_score_2, cls_score_3, cls_score_4]
+                        # "cls_score" is score of global level features, and rests are low level
                         print("Score is a list. Calculating ID loss without label smoothing.")
+                        # take CE loss of scores of low level features!
                         ID_LOSS = [F.cross_entropy(scor, target) for scor in score[1:]]
                         ID_LOSS = sum(ID_LOSS) / len(ID_LOSS)
+                        # take CE loss of scores of global level features "cls_score" in score[0]
+                        # The main score (score[0]) is given specific attention by explicitly combining it with the average of the auxiliary scores.
                         ID_LOSS = 0.5 * ID_LOSS + 0.5 * F.cross_entropy(score[0], target)
                     else:
                         print("Score is not a list. Calculating ID loss without label smoothing.")
                         ID_LOSS = F.cross_entropy(score, target)
 
                     if isinstance(feat, list):
+                        # similary for features and triplet loss like above!
                         print("Feat is a list. Calculating triplet loss.")
                         TRI_LOSS = [triplet(feats, target)[0] for feats in feat[1:]]
                         TRI_LOSS = sum(TRI_LOSS) / len(TRI_LOSS)

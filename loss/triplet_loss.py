@@ -84,24 +84,34 @@ def hard_example_mining(dist_mat, labels, return_inds=False):
     #         [False, False,  True, False],
     #         [False, False, False,  True]])
     # 
+    # labels - troch.Size([16])
     is_pos = labels.expand(N, N).eq(labels.expand(N, N).t())
     is_neg = labels.expand(N, N).ne(labels.expand(N, N).t())
 
     # `dist_ap` means distance(anchor, positive)
     # both `dist_ap` and `relative_p_inds` with shape [N, 1]
     # identifying the hardest positive samples for each anchor
+    print("dist_mat ", dist_mat)
     dist_ap, relative_p_inds = torch.max(
         dist_mat[is_pos].contiguous().view(N, -1), 1, keepdim=True)
     # print(dist_mat[is_pos].shape)
     # `dist_an` means distance(anchor, negative)
     # both `dist_an` and `relative_n_inds` with shape [N, 1]
+    print("dist_mat[is_pos] ", dist_mat[is_pos])
+    print("dist_mat[is_pos] ", dist_mat[is_pos].size())
+    print("dist_mat[is_pos].contiguous().view(N, -1) ", dist_mat[is_pos].contiguous().view(N, -1))
+    print("dist_ap ", dist_ap)
     dist_an, relative_n_inds = torch.min(
         dist_mat[is_neg].contiguous().view(N, -1), 1, keepdim=True)
     # shape [N]
+    print("dist_an ", dist_an)
 
+    print("MAX dist an", torch.max(
+        dist_mat[is_neg].contiguous().view(N, -1), 1, keepdim=True))
 
     dist_ap = dist_ap.squeeze(1)
     dist_an = dist_an.squeeze(1)
+    # exit(0)
 
     if return_inds:
         # shape [N, N]
@@ -154,17 +164,17 @@ class TripletLoss(object):
         if normalize_feature:
             global_feat = normalize(global_feat, axis=-1)
         
-        # torch.Size([16, 768])
-        print("global_feat ", global_feat.size())
+        # torch.Size([16, 768]) - (batch_size, feature dim)
+        # print("global_feat ", global_feat.size())
         # torch.Size([16, 16])
-        print("labels ", labels)
-        dist_mat = euclidean_dist(global_feat, global_feat)
-        print("dist_mat ", dist_mat.size())
+        # print("labels ", labels.size())
+        dist_mat = euclidean_dist(global_feat, global_feat) #torch.Size([16, 16])
+        # print("dist_mat ", dist_mat.size())
         dist_ap, dist_an = hard_example_mining(dist_mat, labels)
         # torch.Size([16])
-        print("dist_ap ", dist_ap.size())
+        # print("dist_ap ", dist_ap.size())
         # torch.Size([16])
-        print("dist_an ", dist_an.size())
+        # print("dist_an ", dist_an.size())
 
         dist_ap *= (1.0 + self.hard_factor)
         dist_an *= (1.0 - self.hard_factor)
@@ -174,13 +184,14 @@ class TripletLoss(object):
         # indicating that we want the positive distances to be smaller than the 
         # negative distances
         y = dist_an.new().resize_as_(dist_an).fill_(1)
-        print("y ", y.size())
+        # y = [1 , 1, 1, 1, 1, 1, 1, 1, 1...]
+        # print("y ", y.size())
 
         if self.margin is not None:
             loss = self.ranking_loss(dist_an, dist_ap, y)
         else:
             loss = self.ranking_loss(dist_an - dist_ap, y)
-        print("loss ", loss)
+        # print("loss ", loss)
         return loss, dist_ap, dist_an
 
 

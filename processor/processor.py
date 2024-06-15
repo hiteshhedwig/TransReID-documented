@@ -66,9 +66,21 @@ def do_train(cfg,
             target_view = target_view.to(device)
             # HIT - Computes predictions and loss
             with amp.autocast(enabled=True):
-                score, feat = model(img, target, cam_label=target_cam, view_label=target_view )
-                loss = loss_fn(score, feat, target, target_cam)
+                # print("Image size input ", img.size())
+                # print("target size input ", target.size())
+                # print("target_cam input ", target_cam.size())
+                # print("target_view input ", target_view.size())
 
+                # image input -  torch.Size([16, 3, 256, 128])
+                # target size - torch.Size([16])
+                # target camera - torch.Size([16])
+                # target_view  - torch.Size([16])
+                score, feat = model(img, target, cam_label=target_cam, view_label=target_view )
+                #print("score", len(score)) # have shape of (torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]), torch.Size([16, 751]),torch.Size([16, 751]))
+                #print("feat", len(feat)) # have a shape of (torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768], torch.Size([16, 768],torch.Size([16, 768])
+                loss = loss_fn(score, feat, target, target_cam)
+            
+            exit(0)
             # HIT - Computes gradients and updates the model weights using the optimizer
             scaler.scale(loss).backward()
 
